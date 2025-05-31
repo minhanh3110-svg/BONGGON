@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Thống kê tổng quan -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h3 class="display-4 text-primary mb-3">{{ total_samples }}</h3>
+                    <h5 class="card-title">Tổng số mẫu</h5>
+                    <p class="card-text text-muted">
+                        <span class="text-success">{{ active_samples }}</span> mẫu đang nuôi cấy
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h3 class="display-4 text-primary mb-3">{{ total_rooms }}</h3>
+                    <h5 class="card-title">Phòng nuôi cấy</h5>
+                    <p class="card-text text-muted">
+                        Đang quản lý và theo dõi
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h3 class="display-4 text-primary mb-3">
+                        {{ (active_samples / total_rooms)|round|int if total_rooms > 0 else 0 }}
+                    </h3>
+                    <h5 class="card-title">Mẫu/Phòng</h5>
+                    <p class="card-text text-muted">
+                        Trung bình mỗi phòng
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hoạt động gần đây -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history me-2"></i>Hoạt động gần đây
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_logs %}
+                    <div class="timeline">
+                        {% for log in recent_logs %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <h6 class="timeline-title">
+                                    {{ log.action|title }}
+                                    <small class="text-muted">
+                                        {{ log.timestamp.strftime('%H:%M %d/%m/%Y') }}
+                                    </small>
+                                </h6>
+                                <p>{{ log.notes or 'Không có ghi chú' }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-3">Chưa có hoạt động nào.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Thống kê nhanh -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Thống kê nhanh
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="sampleStatusChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Liên kết nhanh -->
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-link me-2"></i>Liên kết nhanh
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('main.samples') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-flask me-2"></i>Quản lý mẫu
+                        </a>
+                        <a href="{{ url_for('main.rooms') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-door-open me-2"></i>Quản lý phòng
+                        </a>
+                        <a href="#" class="btn btn-outline-primary">
+                            <i class="fas fa-file-export me-2"></i>Xuất báo cáo
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Biểu đồ thống kê trạng thái mẫu
+    const ctx = document.getElementById('sampleStatusChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Đang nuôi cấy', 'Hoàn thành', 'Thất bại'],
+            datasets: [{
+                data: [{{ active_samples }}, 
+                       {{ completed_samples if completed_samples is defined else 0 }}, 
+                       {{ failed_samples if failed_samples is defined else 0 }}],
+                backgroundColor: [
+                    '#10b981',
+                    '#3b82f6',
+                    '#ef4444'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+});
+</script>
+
+<style>
+.timeline {
+    position: relative;
+    padding: 1rem 0;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    top: 0;
+    height: 100%;
+    width: 2px;
+    background: var(--primary-color);
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 3rem;
+    padding-bottom: 1.5rem;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: 0.65rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background: var(--primary-color);
+    border: 2px solid white;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.5rem;
+}
+
+.timeline-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+</style>
+{% endblock %}
+{% endblock %} 

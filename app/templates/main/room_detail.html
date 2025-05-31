@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="fas fa-door-open me-2"></i>{{ room.name }}
+        </h2>
+        <div>
+            <a href="{{ url_for('main.environment_report', room_id=room.id) }}" class="btn btn-outline-primary me-2">
+                <i class="fas fa-chart-line me-2"></i>Xuất biểu đồ
+            </a>
+            <a href="{{ url_for('main.room_edit', id=room.id) }}" class="btn btn-primary">
+                <i class="fas fa-edit me-2"></i>Chỉnh sửa
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Thông tin chung -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Thông tin chung</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Trạng thái</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge {% if room.status == 'active' %}bg-success
+                                             {% elif room.status == 'maintenance' %}bg-warning
+                                             {% else %}bg-danger{% endif %}">
+                                {{ room.status|title }}
+                            </span>
+                        </dd>
+
+                        <dt class="col-sm-4">Người quản lý</dt>
+                        <dd class="col-sm-8">{{ room.manager.full_name }}</dd>
+
+                        <dt class="col-sm-4">Sức chứa</dt>
+                        <dd class="col-sm-8">
+                            {{ room.current_samples }}/{{ room.capacity }} mẫu
+                            <div class="progress mt-1" style="height: 5px;">
+                                {% set percentage = (room.current_samples / room.capacity * 100)|round|int %}
+                                <div class="progress-bar {% if percentage > 90 %}bg-danger
+                                                        {% elif percentage > 70 %}bg-warning
+                                                        {% else %}bg-success{% endif %}"
+                                     role="progressbar" style="width: {{ percentage }}%">
+                                </div>
+                            </div>
+                        </dd>
+
+                        <dt class="col-sm-4">Ngày tạo</dt>
+                        <dd class="col-sm-8">{{ room.created_at.strftime('%d/%m/%Y') }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thông số môi trường -->
+        <div class="col-md-8 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Thông số môi trường</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <div class="display-4 text-danger mb-2">
+                                    {{ room.temperature|round(1) }}°C
+                                </div>
+                                <div class="text-muted">Nhiệt độ</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <div class="display-4 text-primary mb-2">
+                                    {{ room.humidity|round(1) }}%
+                                </div>
+                                <div class="text-muted">Độ ẩm</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <div class="display-4 text-warning mb-2">
+                                    {{ room.light_level|round }} lux
+                                </div>
+                                <div class="text-muted">Cường độ ánh sáng</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form lọc dữ liệu môi trường -->
+                    <form method="GET" action="{{ url_for('main.environment_report', room_id=room.id) }}" 
+                          class="mt-4">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                {{ env_form.start_date.label(class="form-label") }}
+                                {{ env_form.start_date(class="form-control", type="date") }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ env_form.end_date.label(class="form-label") }}
+                                {{ env_form.end_date(class="form-control", type="date") }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ env_form.parameter.label(class="form-label") }}
+                                {{ env_form.parameter(class="form-select") }}
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-download me-2"></i>Tải về
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danh sách mẫu -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Mẫu nuôi cấy trong phòng</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Mã mẫu</th>
+                                    <th>Tên mẫu</th>
+                                    <th>Giai đoạn</th>
+                                    <th>Trạng thái</th>
+                                    <th>Ngày tạo</th>
+                                    <th>Dự kiến hoàn thành</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sample in room.samples %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('main.sample_detail', id=sample.id) }}"
+                                           class="text-decoration-none">
+                                            {{ sample.code }}
+                                        </a>
+                                    </td>
+                                    <td>{{ sample.name }}</td>
+                                    <td>{{ sample.stage }}</td>
+                                    <td>
+                                        <span class="badge {% if sample.status == 'active' %}bg-success
+                                                          {% elif sample.status == 'completed' %}bg-primary
+                                                          {% elif sample.status == 'failed' %}bg-danger
+                                                          {% else %}bg-secondary{% endif %}">
+                                            {{ sample.status|title }}
+                                        </span>
+                                    </td>
+                                    <td>{{ sample.created_at.strftime('%d/%m/%Y') }}</td>
+                                    <td>
+                                        {% if sample.expected_completion %}
+                                            {{ sample.expected_completion.strftime('%d/%m/%Y') }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('main.sample_edit', id=sample.id) }}"
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-muted">
+                                        <i class="fas fa-info-circle me-2"></i>Chưa có mẫu nào trong phòng này.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+// Cập nhật thông số môi trường real-time
+function updateEnvironmentData() {
+    fetch(`/api/rooms/environment`)
+        .then(response => response.json())
+        .then(data => {
+            const roomData = data.find(r => r.id === {{ room.id }});
+            if (roomData) {
+                document.querySelector('.temperature').textContent = `${roomData.temperature.toFixed(1)}°C`;
+                document.querySelector('.humidity').textContent = `${roomData.humidity.toFixed(1)}%`;
+                document.querySelector('.light-level').textContent = `${Math.round(roomData.light_level)} lux`;
+            }
+        });
+}
+
+// Cập nhật mỗi 30 giây
+setInterval(updateEnvironmentData, 30000);
+</script>
+{% endblock %}
+{% endblock %} 

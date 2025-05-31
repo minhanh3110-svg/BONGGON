@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">{{ title }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" class="needs-validation" novalidate enctype="multipart/form-data">
+                        {{ form.csrf_token }}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.code.label(class="form-label") }}
+                                {{ form.code(class="form-control" + (" is-invalid" if form.code.errors else "")) }}
+                                {% for error in form.code.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.name.label(class="form-label") }}
+                                {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
+                                {% for error in form.name.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.species.label(class="form-label") }}
+                                {{ form.species(class="form-control") }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.variety.label(class="form-label") }}
+                                {{ form.variety(class="form-control") }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.source.label(class="form-label") }}
+                            {{ form.source(class="form-control") }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", rows=3) }}
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.stage.label(class="form-label") }}
+                                {{ form.stage(class="form-control") }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.medium.label(class="form-label") }}
+                                {{ form.medium(class="form-control") }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.room_id.label(class="form-label") }}
+                                {{ form.room_id(class="form-select" + (" is-invalid" if form.room_id.errors else "")) }}
+                                {% for error in form.room_id.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.expected_completion.label(class="form-label") }}
+                                {{ form.expected_completion(class="form-control", type="date") }}
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            {{ form.images.label(class="form-label") }}
+                            {{ form.images(class="form-control" + (" is-invalid" if form.images.errors else ""), multiple=True) }}
+                            {% for error in form.images.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                            <div class="form-text">Chọn một hoặc nhiều hình ảnh (jpg, png, gif)</div>
+                        </div>
+
+                        {% if sample and sample.images %}
+                        <div class="mb-4">
+                            <label class="form-label">Hình ảnh hiện tại</label>
+                            <div class="row g-2">
+                                {% for image in sample.images %}
+                                <div class="col-md-4">
+                                    <div class="position-relative">
+                                        <img src="{{ url_for('static', filename=image.image_path) }}" 
+                                             class="img-thumbnail" alt="Sample image">
+                                        <a href="{{ url_for('main.delete_sample_image', id=image.id) }}"
+                                           class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1"
+                                           onclick="return confirm('Bạn có chắc muốn xóa hình ảnh này?')">
+                                            <i class="fas fa-times"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('main.samples') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Quay lại
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Lưu thông tin
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+// Form validation
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+
+// Image preview
+document.querySelector('input[type="file"]').addEventListener('change', function(e) {
+    const previewContainer = document.createElement('div')
+    previewContainer.className = 'row g-2 mt-2'
+    
+    Array.from(e.target.files).forEach(file => {
+        const reader = new FileReader()
+        reader.onload = function(e) {
+            const col = document.createElement('div')
+            col.className = 'col-md-4'
+            col.innerHTML = `
+                <img src="${e.target.result}" class="img-thumbnail" alt="Preview">
+            `
+            previewContainer.appendChild(col)
+        }
+        reader.readAsDataURL(file)
+    })
+    
+    const existingPreview = this.nextElementSibling
+    if (existingPreview && existingPreview.classList.contains('row')) {
+        existingPreview.remove()
+    }
+    this.parentNode.insertBefore(previewContainer, this.nextSibling)
+})
+</script>
+{% endblock %}
+{% endblock %} 

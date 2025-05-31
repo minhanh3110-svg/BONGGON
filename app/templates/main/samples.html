@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="fas fa-flask me-2"></i>Quản lý mẫu nuôi cấy
+        </h2>
+        <a href="{{ url_for('main.sample_create') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Thêm mẫu mới
+        </a>
+    </div>
+
+    <!-- Bộ lọc -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    {{ filter_form.status.label(class="form-label") }}
+                    {{ filter_form.status(class="form-select") }}
+                </div>
+                <div class="col-md-3">
+                    {{ filter_form.room.label(class="form-label") }}
+                    {{ filter_form.room(class="form-select") }}
+                </div>
+                <div class="col-md-4">
+                    {{ filter_form.search.label(class="form-label") }}
+                    {{ filter_form.search(class="form-control", placeholder="Tìm theo mã, tên mẫu...") }}
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-2"></i>Lọc
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Danh sách mẫu -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Mã mẫu</th>
+                            <th>Tên mẫu</th>
+                            <th>Phòng</th>
+                            <th>Trạng thái</th>
+                            <th>Ngày tạo</th>
+                            <th>Dự kiến hoàn thành</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sample in samples.items %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('main.sample_detail', id=sample.id) }}"
+                                   class="text-decoration-none">
+                                    {{ sample.code }}
+                                </a>
+                            </td>
+                            <td>{{ sample.name }}</td>
+                            <td>
+                                <a href="{{ url_for('main.room_detail', id=sample.room.id) }}"
+                                   class="text-decoration-none">
+                                    {{ sample.room.name }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge {% if sample.status == 'active' %}bg-success
+                                                  {% elif sample.status == 'completed' %}bg-primary
+                                                  {% elif sample.status == 'failed' %}bg-danger
+                                                  {% else %}bg-secondary{% endif %}">
+                                    {{ sample.status|title }}
+                                </span>
+                            </td>
+                            <td>{{ sample.created_at.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                {% if sample.expected_completion %}
+                                    {{ sample.expected_completion.strftime('%d/%m/%Y') }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{{ url_for('main.sample_detail', id=sample.id) }}"
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-info-circle"></i>
+                                    </a>
+                                    <a href="{{ url_for('main.sample_edit', id=sample.id) }}"
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="fas fa-info-circle me-2"></i>Không tìm thấy mẫu nào.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Phân trang -->
+            {% if samples.pages > 1 %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item {% if not samples.has_prev %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('main.samples', page=samples.prev_num) }}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    
+                    {% for page in samples.iter_pages() %}
+                        {% if page %}
+                            <li class="page-item {% if page == samples.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('main.samples', page=page) }}">
+                                    {{ page }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <li class="page-item {% if not samples.has_next %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('main.samples', page=samples.next_num) }}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

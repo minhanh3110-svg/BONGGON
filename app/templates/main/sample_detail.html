@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="fas fa-flask me-2"></i>{{ sample.name }}
+            <small class="text-muted">({{ sample.code }})</small>
+        </h2>
+        <div>
+            <a href="{{ url_for('main.sample_edit', id=sample.id) }}" class="btn btn-primary">
+                <i class="fas fa-edit me-2"></i>Chỉnh sửa
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Thông tin chung -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Thông tin chung</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Trạng thái</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge {% if sample.status == 'active' %}bg-success
+                                             {% elif sample.status == 'completed' %}bg-primary
+                                             {% elif sample.status == 'failed' %}bg-danger
+                                             {% else %}bg-secondary{% endif %}">
+                                {{ sample.status|title }}
+                            </span>
+                        </dd>
+
+                        <dt class="col-sm-4">Loài</dt>
+                        <dd class="col-sm-8">{{ sample.species or '-' }}</dd>
+
+                        <dt class="col-sm-4">Giống</dt>
+                        <dd class="col-sm-8">{{ sample.variety or '-' }}</dd>
+
+                        <dt class="col-sm-4">Nguồn gốc</dt>
+                        <dd class="col-sm-8">{{ sample.source or '-' }}</dd>
+
+                        <dt class="col-sm-4">Giai đoạn</dt>
+                        <dd class="col-sm-8">{{ sample.stage or '-' }}</dd>
+
+                        <dt class="col-sm-4">Môi trường</dt>
+                        <dd class="col-sm-8">{{ sample.medium or '-' }}</dd>
+
+                        <dt class="col-sm-4">Phòng</dt>
+                        <dd class="col-sm-8">
+                            <a href="{{ url_for('main.room_detail', id=sample.room.id) }}"
+                               class="text-decoration-none">
+                                {{ sample.room.name }}
+                            </a>
+                        </dd>
+
+                        <dt class="col-sm-4">Người tạo</dt>
+                        <dd class="col-sm-8">{{ sample.creator.full_name }}</dd>
+
+                        <dt class="col-sm-4">Ngày tạo</dt>
+                        <dd class="col-sm-8">{{ sample.created_at.strftime('%d/%m/%Y') }}</dd>
+
+                        <dt class="col-sm-4">Dự kiến hoàn thành</dt>
+                        <dd class="col-sm-8">
+                            {% if sample.expected_completion %}
+                                {{ sample.expected_completion.strftime('%d/%m/%Y') }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mô tả và hình ảnh -->
+        <div class="col-md-8 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Mô tả và hình ảnh</h5>
+                </div>
+                <div class="card-body">
+                    {% if sample.description %}
+                        <p class="card-text">{{ sample.description }}</p>
+                    {% else %}
+                        <p class="text-muted">Chưa có mô tả.</p>
+                    {% endif %}
+
+                    {% if sample.images %}
+                        <div class="row g-3 mt-3">
+                            {% for image in sample.images %}
+                            <div class="col-md-4">
+                                <div class="position-relative">
+                                    <a href="{{ url_for('static', filename=image.image_path) }}"
+                                       data-lightbox="sample-images"
+                                       data-title="{{ sample.name }} - {{ image.uploaded_at.strftime('%d/%m/%Y') }}">
+                                        <img src="{{ url_for('static', filename=image.image_path) }}"
+                                             class="img-fluid rounded" alt="Sample image">
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted mt-3">Chưa có hình ảnh.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Lịch sử hoạt động -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Lịch sử hoạt động</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        {% for log in sample.logs %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <h6 class="timeline-title">
+                                    {{ log.action|title }}
+                                    <small class="text-muted">
+                                        {{ log.timestamp.strftime('%H:%M %d/%m/%Y') }}
+                                    </small>
+                                </h6>
+                                <p>{{ log.notes or 'Không có ghi chú' }}</p>
+                            </div>
+                        </div>
+                        {% else %}
+                        <p class="text-muted text-center py-3">Chưa có hoạt động nào.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block styles %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/css/lightbox.min.css" rel="stylesheet">
+<style>
+.timeline {
+    position: relative;
+    padding: 1rem 0;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    top: 0;
+    height: 100%;
+    width: 2px;
+    background: var(--bs-primary);
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 3rem;
+    padding-bottom: 1.5rem;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: 0.65rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background: var(--bs-primary);
+    border: 2px solid white;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.5rem;
+}
+
+.timeline-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/js/lightbox.min.js"></script>
+<script>
+lightbox.option({
+    'resizeDuration': 200,
+    'wrapAround': true
+});
+</script>
+{% endblock %}
+{% endblock %} 
